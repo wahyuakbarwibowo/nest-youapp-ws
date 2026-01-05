@@ -1,98 +1,325 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# YouApp Backend – Technical Challenge
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+Backend service for **YouApp** implementing authentication, profile management, and real-time chat using **NestJS**, **MongoDB**, and **RabbitMQ**, following best practices in API design, validation, and scalable architecture.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+---
 
-## Description
+## 🚀 Tech Stack
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+* **Node.js**
+* **NestJS**
+* **MongoDB (Mongoose)**
+* **RabbitMQ**
+* **JWT Authentication**
+* **Socket.IO** (notification)
+* **Docker & Docker Compose**
+* **Jest (Unit Testing)**
 
-## Project setup
+---
 
-```bash
-$ yarn install
+## 📐 Architecture Overview
+
+This project uses a **modular monolith architecture** with clear domain separation and **event-driven communication** via RabbitMQ.
+
+Although implemented as a single service for simplicity and clarity (suitable for a technical challenge), the system is designed to be **microservice-ready** and easily extractable into independent services in the future.
+
+### High-Level Architecture
+
+```
+Client
+  |
+  v
+NestJS API
+  |
+  ├── Auth Module
+  ├── Profile Module
+  ├── Chat Module
+  |      ├── RabbitMQ Producer
+  |      └── RabbitMQ Consumer
+  |
+  └── MongoDB
 ```
 
-## Compile and run the project
+---
 
-```bash
-# development
-$ yarn run start
+## 🧩 Modules Breakdown
 
-# watch mode
-$ yarn run start:dev
+### Auth Module
 
-# production mode
-$ yarn run start:prod
+* User registration
+* User login
+* JWT authentication
+* Password hashing using bcrypt
+
+### Profile Module
+
+* Create profile
+* Get profile
+* Update profile
+* Horoscope & zodiac calculated from birthday (derived fields)
+
+### Chat Module
+
+* One-to-one text messaging
+* Message persistence
+* RabbitMQ-based message delivery
+* Real-time notification via Socket.IO
+* Message read status
+
+---
+
+## 🗄 Database Design (MongoDB)
+
+### User Collection
+
+Responsible only for authentication & identity.
+
+```ts
+{
+  email: string,
+  username: string,
+  password: string,
+  createdAt: Date,
+  updatedAt: Date
+}
 ```
 
-## Run tests
+---
 
-```bash
-# unit tests
-$ yarn run test
+### Profile Collection
 
-# e2e tests
-$ yarn run test:e2e
+User profile data extracted from Figma design.
 
-# test coverage
-$ yarn run test:cov
+```ts
+{
+  userId: ObjectId,
+  displayName: string,
+  image: string,
+  gender: "male" | "female",
+  birthday: Date,
+  horoscope: string,
+  zodiac: string,
+  height: number,
+  weight: number,
+  interests: string[],
+  createdAt: Date,
+  updatedAt: Date
+}
 ```
 
-## Deployment
+> **Note:** `horoscope` and `zodiac` are derived fields calculated from `birthday` to ensure data integrity.
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+---
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+### Message Collection
 
-```bash
-$ yarn install -g @nestjs/mau
-$ mau deploy
+```ts
+{
+  senderId: ObjectId,
+  receiverId: ObjectId,
+  content: string,
+  isRead: boolean,
+  createdAt: Date
+}
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+---
 
-## Resources
+## 🔐 Authentication
 
-Check out a few resources that may come in handy when working with NestJS:
+* JWT-based authentication
+* Protected routes using `JwtAuthGuard`
+* Token required for profile and chat operations
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+---
 
-## Support
+## 📡 RabbitMQ Usage
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+RabbitMQ is used to decouple chat message sending and processing.
 
-## Stay in touch
+### Flow:
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+1. User sends message
+2. API publishes event to RabbitMQ
+3. Consumer processes message
+4. Message saved to database
+5. Receiver notified via Socket.IO
 
-## License
+This demonstrates:
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+* Asynchronous processing
+* Event-driven architecture
+* Microservice-ready design
+
+---
+
+## 📑 API Endpoints
+
+### Auth
+
+#### Register
+
+```
+POST /api/register
+```
+
+```json
+{
+  "email": "user@email.com",
+  "username": "username",
+  "password": "password"
+}
+```
+
+---
+
+#### Login
+
+```
+POST /api/login
+```
+
+```json
+{
+  "email": "user@email.com",
+  "password": "password"
+}
+```
+
+---
+
+### Profile
+
+#### Create Profile
+
+```
+POST /api/createProfile
+Authorization: Bearer <token>
+```
+
+```json
+{
+  "displayName": "John Doe",
+  "image": "https://image.url/avatar.png",
+  "gender": "male",
+  "birthday": "1995-05-20",
+  "height": 175,
+  "weight": 70,
+  "interests": ["Music", "Sports"]
+}
+```
+
+---
+
+#### Get Profile
+
+```
+GET /api/getProfile
+Authorization: Bearer <token>
+```
+
+---
+
+#### Update Profile
+
+```
+PUT /api/updateProfile
+Authorization: Bearer <token>
+```
+
+---
+
+### Chat
+
+#### Send Message
+
+```
+POST /api/sendMessage
+Authorization: Bearer <token>
+```
+
+```json
+{
+  "receiverId": "USER_ID",
+  "content": "Hello!"
+}
+```
+
+---
+
+#### View Messages
+
+```
+GET /api/viewMessages?userId=USER_ID
+Authorization: Bearer <token>
+```
+
+---
+
+## ✅ Validation & Best Practices
+
+* DTO validation using `class-validator`
+* Centralized error handling
+* Clean folder structure
+* Separation of concerns
+* Secure password hashing
+* Environment-based configuration
+
+---
+
+## 🧪 Unit Testing
+
+Unit tests are implemented using **Jest** to validate core business logic such as:
+
+* User registration
+* Login authentication
+* Profile creation
+
+---
+
+## 🐳 Docker Setup
+
+### Run the project
+
+```bash
+docker-compose up --build
+```
+
+### Services Included
+
+* NestJS API
+* MongoDB
+* RabbitMQ (with management UI)
+
+---
+
+## 🧠 Design Decisions
+
+### Why Modular Monolith?
+
+For a technical challenge, a modular monolith offers:
+
+* Lower complexity
+* Faster development
+* Easier evaluation
+* Clear domain separation
+
+RabbitMQ ensures asynchronous communication, making the system ready for future microservice extraction if needed.
+
+---
+
+## 📌 Future Improvements
+
+* Pagination for chat messages
+* Message read receipts
+* User online status
+* Interest normalization
+* API documentation with Swagger
+
+---
+
+## 👤 Author
+
+Developed as part of a backend technical challenge using NestJS and MongoDB.
+
+---
