@@ -4,9 +4,14 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AuthModule } from './auth/auth.module';
+import { ProfilesModule } from './profiles/profiles.module';
 
 @Module({
-  imports: [MongooseModule.forRoot(process.env.MONGO_URI || ''), AuthModule],
+  imports: [
+    MongooseModule.forRoot(process.env.MONGO_URI || ''),
+    AuthModule,
+    ProfilesModule,
+  ],
   controllers: [AppController],
   providers: [AppService],
 })
